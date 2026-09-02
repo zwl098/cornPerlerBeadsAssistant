@@ -1,5 +1,5 @@
 import { almostEqual } from '../src/utils/math.ts'
-import { buildGridMetrics, gridFromCellCenters, suggestPixelGrid } from '../src/models/grid.ts'
+import { buildGridMetrics, gridFromCorners, gridStillFits, scaleGrid, shiftGrid, suggestPixelGrid } from '../src/models/grid.ts'
 
 function assert(condition: boolean, message: string) {
   if (!condition) throw new Error(message)
@@ -14,12 +14,10 @@ assert(suggestPixelGrid(501, 501) === null, 'over max must not guess')
   const origin = 18
   const cell = 10
   const n = 32
-  const first = origin + cell / 2
-  const last = origin + (n - 1) * cell + cell / 2
   const size = origin * 2 + n * cell
-  const spec = gridFromCellCenters(
-    { worldX: first, worldY: first },
-    { worldX: last, worldY: last },
+  const spec = gridFromCorners(
+    { worldX: origin, worldY: origin },
+    { worldX: origin + n * cell, worldY: origin + n * cell },
     n,
     n,
     size,
@@ -38,9 +36,9 @@ assert(suggestPixelGrid(501, 501) === null, 'over max must not guess')
 }
 
 {
-  const swapped = gridFromCellCenters(
-    { worldX: 333, worldY: 333 },
-    { worldX: 23, worldY: 23 },
+  const swapped = gridFromCorners(
+    { worldX: 338, worldY: 338 },
+    { worldX: 18, worldY: 18 },
     32,
     32,
     356,
@@ -50,7 +48,44 @@ assert(suggestPixelGrid(501, 501) === null, 'over max must not guess')
   assert(almostEqual(swapped!.insetLeft, 18), 'swapped insetLeft')
 }
 
-assert(gridFromCellCenters({ worldX: 10, worldY: 10 }, { worldX: 11, worldY: 11 }, 32, 32, 400, 400) === null, 'too close')
-assert(gridFromCellCenters({ worldX: 10, worldY: 10 }, { worldX: 200, worldY: 200 }, 1, 32, 400, 400) === null, 'single row rejected')
+{
+  const skewed = gridFromCorners(
+    { worldX: 20, worldY: 10 },
+    { worldX: 20 + 32 * 10, worldY: 10 + 32 * 12 },
+    32,
+    32,
+    400,
+    400,
+  )
+  assert(Boolean(skewed), 'square board stays square')
+  const metrics = buildGridMetrics(skewed!, 400, 400)
+  assert(almostEqual(metrics.cellWidth, metrics.cellHeight), 'forced square cell')
+}
+
+assert(gridFromCorners({ worldX: 10, worldY: 10 }, { worldX: 11, worldY: 11 }, 32, 32, 400, 400) === null, 'too close')
+assert(gridFromCorners({ worldX: 10, worldY: 10 }, { worldX: 200, worldY: 200 }, 1, 32, 400, 400) === null, 'single row rejected')
+
+{
+  const base = {
+    rowCount: 32,
+    colCount: 32,
+    insetLeft: 18,
+    insetTop: 18,
+    insetRight: 18,
+    insetBottom: 18,
+    calibrated: true,
+  }
+  const moved = shiftGrid(base, 2, -1)
+  assert(almostEqual(moved.insetLeft, 20), 'shift left')
+  assert(almostEqual(moved.insetRight, 16), 'shift right inset')
+  assert(almostEqual(moved.insetTop, 17), 'shift top')
+  const before = buildGridMetrics(base, 356, 356)
+  const afterMove = buildGridMetrics(moved, 356, 356)
+  assert(almostEqual(before.cellWidth, afterMove.cellWidth), 'shift keeps cell size')
+  const grown = scaleGrid(base, 1)
+  const afterGrow = buildGridMetrics(grown, 356, 356)
+  assert(afterGrow.cellWidth > before.cellWidth, 'grow enlarges cell')
+  assert(gridStillFits(grown, 356, 356), 'grown still fits')
+}
 
 process.stdout.write('grid pin checks passed\n')

@@ -38,7 +38,7 @@ function commitCustom() {
     aria-label="钉格子"
   >
     <div v-if="waitingSize" class="flex flex-col gap-2">
-      <p class="text-[13px] leading-5 text-ink">这张图几格？选完点两颗豆就行</p>
+      <p class="text-[13px] leading-5 text-ink">这张图几格？选完点白底网格的两个角</p>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="preset in PIN_PRESETS"
@@ -81,7 +81,7 @@ function commitCustom() {
 
     <div v-else class="flex items-center justify-between gap-3">
       <p class="min-w-0 text-[13px] leading-5 text-ink">
-        {{ props.hasFirst ? '再点右下角最后一颗豆的中间' : '点左上角第一颗豆的中间' }}
+        {{ props.hasFirst ? '再点白底右下角，不要点外面灰框' : '点白底网格左上角' }}
         <span class="ml-1 font-mono text-ink-3">{{ props.colCount }}×{{ props.rowCount }}</span>
       </p>
       <button type="button" class="shrink-0 text-[13px] font-medium text-ink-2" @click="emit('retry')">重来</button>

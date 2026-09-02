@@ -17,10 +17,11 @@ export function suggestPixelGrid(width: number, height: number): { rowCount: num
 }
 
 /**
- * 两点按「第一颗 / 最后一颗」的格心解释。
+ * 两点是白底网格的外角（第一格左上 → 最后一格右下）。
+ * 格子边长 = 跨度 / 格数。方板强制正方格，避免横竖格大小不一致。
  * 不改 Camera：只算出 GridSpec 的行列和 inset。
  */
-export function gridFromCellCenters(
+export function gridFromCorners(
   a: WorldPt,
   b: WorldPt,
   rowCount: number,
@@ -42,12 +43,22 @@ export function gridFromCellCenters(
   const spanY = y1 - y0
   if (spanX < 2 || spanY < 2) return null
 
-  const cellWidth = spanX / (cols - 1)
-  const cellHeight = spanY / (rows - 1)
+  let cellWidth = spanX / cols
+  let cellHeight = spanY / rows
+  let originX = x0
+  let originY = y0
+
+  if (rows === cols) {
+    const cell = (cellWidth + cellHeight) / 2
+    if (cell < 1) return null
+    cellWidth = cell
+    cellHeight = cell
+    originX = (x0 + x1) / 2 - (cell * cols) / 2
+    originY = (y0 + y1) / 2 - (cell * rows) / 2
+  }
+
   if (cellWidth < 1 || cellHeight < 1) return null
 
-  const originX = x0 - cellWidth / 2
-  const originY = y0 - cellHeight / 2
   const gridWidth = cellWidth * cols
   const gridHeight = cellHeight * rows
   if (gridWidth < 2 || gridHeight < 2) return null
@@ -70,6 +81,34 @@ export function gridFromCellCenters(
     insetBottom,
     calibrated: true,
   }
+}
+
+export function shiftGrid(spec: GridSpec, dx: number, dy: number): GridSpec {
+  return {
+    ...spec,
+    insetLeft: spec.insetLeft + dx,
+    insetRight: spec.insetRight - dx,
+    insetTop: spec.insetTop + dy,
+    insetBottom: spec.insetBottom - dy,
+  }
+}
+
+/** grow > 0 格子变大（四边 inset 减小），cell size 变大但行列不变。 */
+export function scaleGrid(spec: GridSpec, grow: number): GridSpec {
+  return {
+    ...spec,
+    insetLeft: spec.insetLeft - grow,
+    insetRight: spec.insetRight - grow,
+    insetTop: spec.insetTop - grow,
+    insetBottom: spec.insetBottom - grow,
+  }
+}
+
+export function gridStillFits(spec: GridSpec, imageWidth: number, imageHeight: number): boolean {
+  const metrics = buildGridMetrics(spec, imageWidth, imageHeight)
+  if (metrics.cellWidth < 1 || metrics.cellHeight < 1) return false
+  if (metrics.gridWidth < spec.colCount || metrics.gridHeight < spec.rowCount) return false
+  return Number.isFinite(metrics.cellWidth) && Number.isFinite(metrics.cellHeight)
 }
 
 export function buildGridMetrics(spec: GridSpec, imageWidth: number, imageHeight: number): GridMetrics {

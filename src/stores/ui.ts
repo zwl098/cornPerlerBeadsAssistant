@@ -13,6 +13,7 @@ type ModalKind = 'oversize'
 type UiState = {
   toasts: ToastItem[]
   reselectToken: number
+  tuneToken: number
   modal: {
     open: boolean
     kind: ModalKind
@@ -28,6 +29,7 @@ export const useUiStore = defineStore('ui', {
   state: (): UiState => ({
     toasts: [],
     reselectToken: 0,
+    tuneToken: 0,
     modal: {
       open: false,
       kind: 'oversize',
@@ -60,6 +62,9 @@ export const useUiStore = defineStore('ui', {
     requestReselect() {
       this.modal.open = false
       this.reselectToken += 1
+    },
+    requestTune() {
+      this.tuneToken += 1
     },
   },
 })

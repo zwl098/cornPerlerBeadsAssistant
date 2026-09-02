@@ -5,7 +5,7 @@ import { canvasToGrid, canvasToWorld, screenToCanvas, type CanvasRect } from '@/
 import { PointerMachine } from '@/engine/input/pointerMachine'
 import { Renderer } from '@/engine/renderer'
 import { packCell } from '@/models/cellId'
-import { gridFromCellCenters } from '@/models/grid'
+import { gridFromCorners } from '@/models/grid'
 import { useInteractionStore } from '@/stores/interaction'
 import { useProgressStore } from '@/stores/progress'
 import { useProjectStore } from '@/stores/project'
@@ -106,7 +106,7 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
             renderer?.requestFrame()
             return
           }
-          const spec = gridFromCellCenters(
+          const spec = gridFromCorners(
             interaction.pinFirst,
             world,
             interaction.pinRows,
@@ -122,8 +122,9 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
           }
           project.applyGrid(spec)
           interaction.endPin()
-          settings.setShowGrid(false)
-          ui.toast('已钉住。要对就打开网格', 'ok')
+          settings.setShowGrid(true)
+          ui.requestTune()
+          ui.toast('可微调位置和格子大小', 'ok')
           renderer?.requestFrame()
           return
         }

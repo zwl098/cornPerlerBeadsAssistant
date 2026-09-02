@@ -15,16 +15,19 @@ import { useInteractionStore } from '@/stores/interaction'
 import { useProgressStore } from '@/stores/progress'
 import { useProjectStore } from '@/stores/project'
 import { useSettingsStore } from '@/stores/settings'
+import { useUiStore } from '@/stores/ui'
 
 const router = useRouter()
 const project = useProjectStore()
 const settings = useSettingsStore()
 const progress = useProgressStore()
 const interaction = useInteractionStore()
+const ui = useUiStore()
 const { showGrid } = storeToRefs(settings)
 const { canUndo, canRedo } = storeToRefs(progress)
 const { gridCalibrated } = storeToRefs(project)
 const { pinning, pinRows, pinCols, pinFirst } = storeToRefs(interaction)
+const { tuneToken } = storeToRefs(ui)
 const stage = ref<{
   fit: () => void
   zoomIn: () => void
@@ -62,6 +65,12 @@ function syncPinFlow() {
 
 onMounted(syncPinFlow)
 watch(() => project.projectId, syncPinFlow)
+watch(tuneToken, (token) => {
+  if (token > 0) {
+    settings.setShowGrid(true)
+    gridOpen.value = true
+  }
+})
 </script>
 
 <template>
@@ -148,6 +157,8 @@ watch(() => project.projectId, syncPinFlow)
       @update:row-count="setRow"
       @update:col-count="setCol"
       @update:show-grid="settings.setShowGrid"
+      @shift="(dx, dy) => project.nudge(dx, dy)"
+      @grow="(delta) => project.growCells(delta)"
       @repin="startPin(project.grid.rowCount, project.grid.colCount)"
     />
   </div>

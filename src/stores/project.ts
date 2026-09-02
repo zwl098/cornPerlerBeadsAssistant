@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { DEFAULT_GRID, MAX_GRID_COUNT, MIN_GRID_COUNT, type GridSpec, type ImageAsset } from '@/models/types'
-import { buildGridMetrics, hasGridSize, isGridCalibrated, suggestPixelGrid } from '@/models/grid'
+import { buildGridMetrics, gridStillFits, hasGridSize, isGridCalibrated, scaleGrid, shiftGrid, suggestPixelGrid } from '@/models/grid'
 import { newProjectId } from '@/utils/id'
 import { clamp } from '@/utils/math'
 
@@ -119,6 +119,24 @@ export const useProjectStore = defineStore('project', {
         insetBottom: spec.insetBottom,
         calibrated: true,
       }
+    },
+    nudge(dx: number, dy: number) {
+      if (!this.image || !isGridCalibrated(this.grid)) return
+      const next = shiftGrid(this.grid, dx, dy)
+      if (!gridStillFits(next, this.image.width, this.image.height)) return
+      this.grid.insetLeft = next.insetLeft
+      this.grid.insetTop = next.insetTop
+      this.grid.insetRight = next.insetRight
+      this.grid.insetBottom = next.insetBottom
+    },
+    growCells(grow: number) {
+      if (!this.image || !isGridCalibrated(this.grid)) return
+      const next = scaleGrid(this.grid, grow)
+      if (!gridStillFits(next, this.image.width, this.image.height)) return
+      this.grid.insetLeft = next.insetLeft
+      this.grid.insetTop = next.insetTop
+      this.grid.insetRight = next.insetRight
+      this.grid.insetBottom = next.insetBottom
     },
     setGridSize(rowCount: number, colCount: number) {
       this.grid.rowCount = sanitizeCount(rowCount)

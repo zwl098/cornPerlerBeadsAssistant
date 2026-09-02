@@ -45,8 +45,8 @@ export const useInteractionStore = defineStore('interaction', {
     label(state): string {
       if (state.pinning) {
         if (state.pinRows < 2 || state.pinCols < 2) return '这张图几格？先选板型'
-        if (!state.pinFirst) return '点左上角第一颗豆的中间'
-        return '再点右下角最后一颗豆的中间'
+        if (!state.pinFirst) return '点白底网格左上角'
+        return '再点白底网格右下角'
       }
       if (state.mode === 'count') {
         if (state.countStart && state.countEnd) {
