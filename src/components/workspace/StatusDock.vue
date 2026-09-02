@@ -14,6 +14,7 @@ const { doneCount } = storeToRefs(progress)
 const { totalCells } = storeToRefs(project)
 
 const percent = computed(() => completionPercent(doneCount.value, totalCells.value))
+const pinning = computed(() => interaction.pinning || !project.gridCalibrated)
 </script>
 
 <template>
@@ -37,8 +38,14 @@ const percent = computed(() => completionPercent(doneCount.value, totalCells.val
         </p>
       </div>
       <div class="shrink-0 text-right font-mono text-ink-2">
-        <p class="text-[13px] leading-5">已完成 {{ doneCount }} / {{ totalCells }}</p>
-        <p class="text-[12px] leading-4">{{ percent }}%</p>
+        <template v-if="pinning">
+          <p class="text-[13px] leading-5">未钉格</p>
+          <p class="text-[12px] leading-4">点两颗豆</p>
+        </template>
+        <template v-else>
+          <p class="text-[13px] leading-5">已完成 {{ doneCount }} / {{ totalCells }}</p>
+          <p class="text-[12px] leading-4">{{ percent }}%</p>
+        </template>
       </div>
     </div>
   </div>

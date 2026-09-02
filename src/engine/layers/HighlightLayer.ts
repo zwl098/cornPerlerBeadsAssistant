@@ -1,6 +1,6 @@
 import { gridToWorldCenter, gridToWorldRect, worldToCanvas } from '../coord'
 import type { Layer, LayerContext } from './types'
-import type { GridCell, GridMetrics, ViewportState } from '../../models/types'
+import type { GridCell, GridMetrics, ViewportState, WorldPt } from '../../models/types'
 
 const CROSS_FILL = 'rgba(26, 26, 26, 0.045)'
 const FOCUS_FILL = 'rgba(26, 26, 26, 0.06)'
@@ -43,6 +43,31 @@ export class HighlightLayer implements Layer {
     ctx.strokeStyle = STROKE_INNER
     ctx.lineWidth = 2 * unit
     ctx.strokeRect(cell.x + unit, cell.y + unit, Math.max(0, cell.w - 2 * unit), Math.max(0, cell.h - 2 * unit))
+  }
+
+  drawPins(lc: LayerContext, points: WorldPt[]): void {
+    if (points.length === 0) return
+    const { ctx, camera } = lc
+    const unit = 1 / camera.scale
+    for (const point of points) {
+      const r = 8 * unit
+      ctx.strokeStyle = STROKE_OUTER
+      ctx.lineWidth = 2 * unit
+      ctx.beginPath()
+      ctx.moveTo(point.worldX - r, point.worldY)
+      ctx.lineTo(point.worldX + r, point.worldY)
+      ctx.moveTo(point.worldX, point.worldY - r)
+      ctx.lineTo(point.worldX, point.worldY + r)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(point.worldX, point.worldY, 5 * unit, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.strokeStyle = STROKE_INNER
+      ctx.lineWidth = unit
+      ctx.beginPath()
+      ctx.arc(point.worldX, point.worldY, 5 * unit, 0, Math.PI * 2)
+      ctx.stroke()
+    }
   }
 
   drawLabels(

@@ -4,6 +4,7 @@ import type { ImageAsset } from '@/models/types'
 import { useInteractionStore } from '@/stores/interaction'
 import { useProgressStore } from '@/stores/progress'
 import { useProjectStore } from '@/stores/project'
+import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 import { useViewportStore } from '@/stores/viewport'
 import {
@@ -19,6 +20,7 @@ export function useImageUpload() {
   const progress = useProgressStore()
   const viewport = useViewportStore()
   const interaction = useInteractionStore()
+  const settings = useSettingsStore()
   const ui = useUiStore()
   const { hasImage } = storeToRefs(project)
   const busy = ref(false)
@@ -61,6 +63,8 @@ export function useImageUpload() {
       interaction.setMode('select')
       interaction.clearFocus()
       interaction.clearCount()
+      interaction.endPin()
+      settings.setShowGrid(project.gridCalibrated)
     } catch (error) {
       if (isDimensionError(error)) {
         ui.openOversizeModal('这张图边长超过 8000 像素，换一张小一点的')

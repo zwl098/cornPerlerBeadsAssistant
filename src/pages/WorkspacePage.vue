@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { PhArrowLeft, PhArrowUUpLeft, PhArrowUUpRight, PhGridFour } from '@phosphor-icons/vue'
@@ -8,8 +8,10 @@ import GridSheet from '@/components/workspace/GridSheet.vue'
 import MiniMap from '@/components/workspace/MiniMap.vue'
 import StatusDock from '@/components/workspace/StatusDock.vue'
 import ModeDock from '@/components/workspace/ModeDock.vue'
+import PinBar from '@/components/workspace/PinBar.vue'
 import ZoomControls from '@/components/workspace/ZoomControls.vue'
 import { displayFormat } from '@/utils/file'
+import { useInteractionStore } from '@/stores/interaction'
 import { useProgressStore } from '@/stores/progress'
 import { useProjectStore } from '@/stores/project'
 import { useSettingsStore } from '@/stores/settings'
@@ -18,8 +20,11 @@ const router = useRouter()
 const project = useProjectStore()
 const settings = useSettingsStore()
 const progress = useProgressStore()
+const interaction = useInteractionStore()
 const { showGrid } = storeToRefs(settings)
 const { canUndo, canRedo } = storeToRefs(progress)
+const { gridCalibrated } = storeToRefs(project)
+const { pinning, pinRows, pinCols, pinFirst } = storeToRefs(interaction)
 const stage = ref<{
   fit: () => void
   zoomIn: () => void
@@ -27,18 +32,36 @@ const stage = ref<{
 } | null>(null)
 
 const gridOpen = ref(false)
+const showPinBar = computed(() => pinning.value || !gridCalibrated.value)
 
 function goHome() {
   void router.push('/')
 }
 
 function setRow(value: number) {
-  project.setGridSize(value, project.grid.colCount)
+  project.setGridSize(value, project.hasGridSize ? project.grid.colCount : value)
 }
 
 function setCol(value: number) {
-  project.setGridSize(project.grid.rowCount, value)
+  project.setGridSize(project.hasGridSize ? project.grid.rowCount : value, value)
 }
+
+function startPin(rowCount?: number, colCount?: number) {
+  gridOpen.value = false
+  if (rowCount && colCount) interaction.setPinSize(rowCount, colCount)
+  else interaction.beginPin()
+}
+
+function syncPinFlow() {
+  if (project.gridCalibrated) {
+    interaction.endPin()
+    return
+  }
+  interaction.beginPin()
+}
+
+onMounted(syncPinFlow)
+watch(() => project.projectId, syncPinFlow)
 </script>
 
 <template>
@@ -86,11 +109,13 @@ function setCol(value: number) {
       </button>
       <button
         type="button"
-        class="inline-flex h-11 items-center gap-1 rounded-lg px-3 text-[13px] font-medium text-ink"
-        @click="gridOpen = true"
+        class="inline-flex h-11 items-center gap-1 rounded-lg px-3 text-[13px] font-medium"
+        :class="gridCalibrated && !pinning ? 'text-ink' : 'bg-brand-soft text-brand'"
+        @click="gridCalibrated && !pinning ? (gridOpen = true) : startPin()"
       >
         <PhGridFour :size="18" weight="regular" />
-        {{ project.grid.colCount }}×{{ project.grid.rowCount }}
+        <template v-if="gridCalibrated && !pinning">{{ project.grid.colCount }}×{{ project.grid.rowCount }}</template>
+        <template v-else>钉格子</template>
       </button>
     </header>
 
@@ -104,7 +129,15 @@ function setCol(value: number) {
       <ZoomControls @in="stage?.zoomIn()" @out="stage?.zoomOut()" @fit="stage?.fit()" />
     </main>
 
-    <ModeDock />
+    <PinBar
+      v-if="showPinBar"
+      :row-count="pinRows"
+      :col-count="pinCols"
+      :has-first="Boolean(pinFirst)"
+      @pick="startPin"
+      @retry="startPin(pinRows, pinCols)"
+    />
+    <ModeDock v-else />
 
     <GridSheet
       :open="gridOpen"
@@ -115,6 +148,7 @@ function setCol(value: number) {
       @update:row-count="setRow"
       @update:col-count="setCol"
       @update:show-grid="settings.setShowGrid"
+      @repin="startPin(project.grid.rowCount, project.grid.colCount)"
     />
   </div>
 </template>

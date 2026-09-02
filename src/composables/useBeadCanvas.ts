@@ -1,14 +1,16 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { capDpr, wheelFactor } from '@/engine/camera'
-import { canvasToGrid, screenToCanvas, type CanvasRect } from '@/engine/coord'
+import { canvasToGrid, canvasToWorld, screenToCanvas, type CanvasRect } from '@/engine/coord'
 import { PointerMachine } from '@/engine/input/pointerMachine'
 import { Renderer } from '@/engine/renderer'
 import { packCell } from '@/models/cellId'
+import { gridFromCellCenters } from '@/models/grid'
 import { useInteractionStore } from '@/stores/interaction'
 import { useProgressStore } from '@/stores/progress'
 import { useProjectStore } from '@/stores/project'
 import { useSettingsStore } from '@/stores/settings'
+import { useUiStore } from '@/stores/ui'
 import { useViewportStore } from '@/stores/viewport'
 
 const WELL = '#d9d3c9'
@@ -19,6 +21,7 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
   const settings = useSettingsStore()
   const interaction = useInteractionStore()
   const progress = useProgressStore()
+  const ui = useUiStore()
   const { scalePercent } = storeToRefs(viewport)
 
   let renderer: Renderer | null = null
@@ -70,13 +73,14 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
           }
         : null,
       grid: project.gridMetrics,
-      showGrid: settings.showGrid,
+      showGrid: settings.showGrid && project.gridCalibrated && !interaction.pinning,
       wellColor: WELL,
       focus: interaction.focus,
       countStart: interaction.countStart,
       countEnd: interaction.countEnd,
       countTotal: interaction.countResult?.total ?? null,
-      showFocus: interaction.mode !== 'count',
+      showFocus: interaction.mode !== 'count' && project.gridCalibrated && !interaction.pinning,
+      pinPoints: interaction.pinFirst ? [interaction.pinFirst] : [],
       completed: progress.completed,
     }))
 
@@ -94,6 +98,36 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
         renderer?.requestFrame()
       },
       tap(point) {
+        if (interaction.pinning) {
+          if (!interaction.pinReady || !project.image) return
+          const world = canvasToWorld(point, viewport.camera)
+          if (!interaction.pinFirst) {
+            interaction.setPinFirst(world)
+            renderer?.requestFrame()
+            return
+          }
+          const spec = gridFromCellCenters(
+            interaction.pinFirst,
+            world,
+            interaction.pinRows,
+            interaction.pinCols,
+            project.image.width,
+            project.image.height,
+          )
+          if (!spec) {
+            ui.toast('两点太近或太偏，再点一次', 'warn')
+            interaction.clearPinFirst()
+            renderer?.requestFrame()
+            return
+          }
+          project.applyGrid(spec)
+          interaction.endPin()
+          settings.setShowGrid(false)
+          ui.toast('已钉住。要对就打开网格', 'ok')
+          renderer?.requestFrame()
+          return
+        }
+        if (!project.gridCalibrated) return
         const grid = project.gridMetrics
         if (!grid) return
         const cell = canvasToGrid(point, viewport.camera, grid)
@@ -283,6 +317,7 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
         viewport.reset()
         interaction.clearFocus()
         interaction.clearCount()
+        interaction.endPin()
         progress.reset()
       }
       handleResize()
@@ -292,10 +327,21 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
   )
 
   watch(
-    () => [project.grid.rowCount, project.grid.colCount] as const,
-    () => {
+    () =>
+      [
+        project.grid.rowCount,
+        project.grid.colCount,
+        project.grid.insetLeft,
+        project.grid.insetTop,
+        project.grid.insetRight,
+        project.grid.insetBottom,
+        project.grid.calibrated,
+      ] as const,
+    (next, prev) => {
       interaction.clampToGrid(project.grid.rowCount, project.grid.colCount)
-      progress.reset()
+      if (prev && (next[0] !== prev[0] || next[1] !== prev[1])) {
+        progress.reset()
+      }
       const size = world()
       if (size && viewport.cssWidth > 0) {
         viewport.resize(viewport.cssWidth, viewport.cssHeight, viewport.dpr, size)
@@ -312,7 +358,7 @@ export function useBeadCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
   )
 
   watch(
-    () => [interaction.focus, interaction.countStart, interaction.countEnd, interaction.mode],
+    () => [interaction.focus, interaction.countStart, interaction.countEnd, interaction.mode, interaction.pinFirst, interaction.pinning],
     () => {
       renderer?.requestFrame()
     },

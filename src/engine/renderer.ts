@@ -7,7 +7,7 @@ import { HighlightLayer } from '@/engine/layers/HighlightLayer'
 import { ImageLayer } from '@/engine/layers/ImageLayer'
 import type { EngineImage, LayerContext } from '@/engine/layers/types'
 import type { CellId } from '@/models/cellId'
-import type { GridCell, GridMetrics, ViewportState } from '@/models/types'
+import type { GridCell, GridMetrics, ViewportState, WorldPt } from '@/models/types'
 
 export type DrawSnapshot = {
   camera: ViewportState
@@ -20,6 +20,7 @@ export type DrawSnapshot = {
   countEnd: GridCell | null
   countTotal: number | null
   showFocus: boolean
+  pinPoints: WorldPt[]
   completed: ReadonlySet<CellId>
 }
 
@@ -103,6 +104,7 @@ export class Renderer {
     this.imageLayer.draw(lc)
     this.gridLayer.draw(lc)
     this.completedLayer.draw(lc)
+    this.highlightLayer.drawPins(lc, snap.pinPoints)
     if (snap.showFocus) {
       this.highlightLayer.drawFill(lc)
       this.highlightLayer.drawStroke(lc)

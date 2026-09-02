@@ -31,6 +31,7 @@ export type GridSpec = {
   insetTop: number
   insetRight: number
   insetBottom: number
+  calibrated?: boolean
 }
 
 export type GridMetrics = GridSpec & {
@@ -53,16 +54,24 @@ export type ImageAsset = {
 }
 
 export const DEFAULT_GRID: GridSpec = {
-  rowCount: 50,
-  colCount: 50,
+  rowCount: 0,
+  colCount: 0,
   insetLeft: 0,
   insetTop: 0,
   insetRight: 0,
   insetBottom: 0,
+  calibrated: false,
 }
+
+export const PIN_PRESETS = [
+  { label: '29×29', rowCount: 29, colCount: 29 },
+  { label: '32×32', hint: '四宫格', rowCount: 32, colCount: 32 },
+  { label: '50×50', rowCount: 50, colCount: 50 },
+] as const
 
 export const GRID_PRESETS = [
   { label: '29×29', rowCount: 29, colCount: 29 },
+  { label: '32×32', rowCount: 32, colCount: 32 },
   { label: '50×50', rowCount: 50, colCount: 50 },
   { label: '100×100', rowCount: 100, colCount: 100 },
   { label: '200×200', rowCount: 200, colCount: 200 },

@@ -63,6 +63,7 @@ export async function loadProject(id: string): Promise<boolean> {
     settings.setShowGrid(record.showGrid)
     viewport.reset()
     viewport.restoreView(record.view)
+    interaction.endPin()
     interaction.setMode('select')
     interaction.clearCount()
     if (record.focus) interaction.setFocus(record.focus)

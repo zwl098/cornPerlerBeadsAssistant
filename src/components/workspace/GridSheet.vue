@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  repin: []
   'update:rowCount': [value: number]
   'update:colCount': [value: number]
   'update:showGrid': [value: boolean]
@@ -59,6 +60,14 @@ function applyPreset(row: number, col: number) {
           <h2 class="text-[17px] font-semibold text-ink">网格</h2>
           <button type="button" class="text-[14px] font-medium text-ink-2" @click="emit('close')">完成</button>
         </header>
+
+        <button
+          type="button"
+          class="mb-4 flex h-11 w-full items-center justify-center rounded-lg bg-brand-soft text-[15px] font-medium text-brand"
+          @click="emit('repin')"
+        >
+          重新钉格
+        </button>
 
         <label class="mb-4 flex items-center justify-between gap-3 text-[15px] text-ink">
           显示网格

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { DEFAULT_GRID, MAX_GRID_COUNT, MIN_GRID_COUNT, type GridSpec, type ImageAsset } from '@/models/types'
-import { buildGridMetrics } from '@/models/grid'
+import { buildGridMetrics, hasGridSize, isGridCalibrated, suggestPixelGrid } from '@/models/grid'
 import { newProjectId } from '@/utils/id'
 import { clamp } from '@/utils/math'
 
@@ -23,6 +23,35 @@ function sanitizeCount(value: number): number {
   return clamp(Math.round(value), MIN_GRID_COUNT, MAX_GRID_COUNT)
 }
 
+function gridForImage(image: ImageAsset): GridSpec {
+  const hint = suggestPixelGrid(image.width, image.height)
+  if (!hint) return { ...DEFAULT_GRID }
+  return {
+    rowCount: hint.rowCount,
+    colCount: hint.colCount,
+    insetLeft: 0,
+    insetTop: 0,
+    insetRight: 0,
+    insetBottom: 0,
+    calibrated: true,
+  }
+}
+
+function normalizeRestoredGrid(grid: GridSpec): GridSpec {
+  const rowCount = Number.isFinite(grid.rowCount) ? Math.round(grid.rowCount) : 0
+  const colCount = Number.isFinite(grid.colCount) ? Math.round(grid.colCount) : 0
+  const sized = hasGridSize({ rowCount, colCount })
+  return {
+    rowCount: sized ? sanitizeCount(rowCount) : 0,
+    colCount: sized ? sanitizeCount(colCount) : 0,
+    insetLeft: grid.insetLeft,
+    insetTop: grid.insetTop,
+    insetRight: grid.insetRight,
+    insetBottom: grid.insetBottom,
+    calibrated: grid.calibrated !== false && sized,
+  }
+}
+
 export const useProjectStore = defineStore('project', {
   state: (): ProjectState => ({
     projectId: 'draft',
@@ -33,18 +62,22 @@ export const useProjectStore = defineStore('project', {
   }),
   getters: {
     hasImage: (state) => Boolean(state.image?.objectUrl),
+    hasGridSize: (state) => hasGridSize(state.grid),
+    gridCalibrated: (state) => isGridCalibrated(state.grid),
     gridMetrics: (state) => {
-      if (!state.image) return null
+      if (!state.image || !hasGridSize(state.grid)) return null
       return buildGridMetrics(state.grid, state.image.width, state.image.height)
     },
-    totalCells: (state) => state.grid.rowCount * state.grid.colCount,
+    totalCells: (state) => (hasGridSize(state.grid) ? state.grid.rowCount * state.grid.colCount : 0),
     worldSize: (state) => {
       if (!state.image) return null
-      const metrics = buildGridMetrics(state.grid, state.image.width, state.image.height)
+      const metrics = hasGridSize(state.grid)
+        ? buildGridMetrics(state.grid, state.image.width, state.image.height)
+        : null
       return {
         width: state.image.width,
         height: state.image.height,
-        cellSize: Math.min(metrics.cellWidth, metrics.cellHeight),
+        cellSize: metrics ? Math.min(metrics.cellWidth, metrics.cellHeight) : 1,
       }
     },
   },
@@ -55,7 +88,7 @@ export const useProjectStore = defineStore('project', {
       this.createdAt = Date.now()
       this.name = name
       this.image = { ...image, bitmap: image.bitmap ?? null }
-      this.grid = { ...DEFAULT_GRID }
+      this.grid = gridForImage(image)
     },
     restore(payload: {
       id: string
@@ -69,12 +102,23 @@ export const useProjectStore = defineStore('project', {
       this.createdAt = payload.createdAt
       this.name = payload.name
       this.image = { ...payload.image, bitmap: payload.image.bitmap ?? null }
-      this.grid = { ...payload.grid }
+      this.grid = normalizeRestoredGrid(payload.grid)
     },
     setBitmap(bitmap: ImageBitmap | null) {
       if (!this.image) return
       this.image.bitmap?.close()
       this.image.bitmap = bitmap
+    },
+    applyGrid(spec: GridSpec) {
+      this.grid = {
+        rowCount: sanitizeCount(spec.rowCount),
+        colCount: sanitizeCount(spec.colCount),
+        insetLeft: spec.insetLeft,
+        insetTop: spec.insetTop,
+        insetRight: spec.insetRight,
+        insetBottom: spec.insetBottom,
+        calibrated: true,
+      }
     },
     setGridSize(rowCount: number, colCount: number) {
       this.grid.rowCount = sanitizeCount(rowCount)

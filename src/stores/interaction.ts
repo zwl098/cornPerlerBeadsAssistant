@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { countCells, type CountResult } from '@/engine/count'
-import type { GridCell } from '@/models/types'
+import type { GridCell, WorldPt } from '@/models/types'
 
 export type ToolMode = 'select' | 'count' | 'complete'
 
@@ -9,6 +9,10 @@ type InteractionState = {
   focus: GridCell | null
   countStart: GridCell | null
   countEnd: GridCell | null
+  pinning: boolean
+  pinRows: number
+  pinCols: number
+  pinFirst: WorldPt | null
 }
 
 function cell(value: GridCell): GridCell {
@@ -25,13 +29,25 @@ export const useInteractionStore = defineStore('interaction', {
     focus: null,
     countStart: null,
     countEnd: null,
+    pinning: false,
+    pinRows: 0,
+    pinCols: 0,
+    pinFirst: null,
   }),
   getters: {
+    pinReady(state): boolean {
+      return state.pinning && state.pinRows >= 2 && state.pinCols >= 2
+    },
     countResult(state): CountResult | null {
       if (!state.countStart || !state.countEnd) return null
       return countCells(state.countStart, state.countEnd)
     },
     label(state): string {
+      if (state.pinning) {
+        if (state.pinRows < 2 || state.pinCols < 2) return '这张图几格？先选板型'
+        if (!state.pinFirst) return '点左上角第一颗豆的中间'
+        return '再点右下角最后一颗豆的中间'
+      }
       if (state.mode === 'count') {
         if (state.countStart && state.countEnd) {
           const result = countCells(state.countStart, state.countEnd)
@@ -52,6 +68,7 @@ export const useInteractionStore = defineStore('interaction', {
   },
   actions: {
     setMode(mode: ToolMode) {
+      if (this.pinning) return
       this.mode = mode
     },
     setFocus(next: GridCell) {
@@ -73,6 +90,34 @@ export const useInteractionStore = defineStore('interaction', {
     clearCount() {
       this.countStart = null
       this.countEnd = null
+    },
+    beginPin(rowCount = 0, colCount = 0) {
+      this.pinning = true
+      this.pinRows = rowCount
+      this.pinCols = colCount
+      this.pinFirst = null
+      this.mode = 'select'
+      this.focus = null
+      this.countStart = null
+      this.countEnd = null
+    },
+    setPinSize(rowCount: number, colCount: number) {
+      this.pinning = true
+      this.pinRows = rowCount
+      this.pinCols = colCount
+      this.pinFirst = null
+    },
+    setPinFirst(point: WorldPt) {
+      this.pinFirst = { worldX: point.worldX, worldY: point.worldY }
+    },
+    clearPinFirst() {
+      this.pinFirst = null
+    },
+    endPin() {
+      this.pinning = false
+      this.pinRows = 0
+      this.pinCols = 0
+      this.pinFirst = null
     },
     clampToGrid(rowCount: number, colCount: number) {
       if (this.focus && outOfRange(this.focus, rowCount, colCount)) this.focus = null

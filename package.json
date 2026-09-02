@@ -8,6 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "check:coord": "npx --yes tsx scripts/check-coord.mts",
+    "check:grid": "npx --yes tsx scripts/check-grid.mts",
     "check:count": "npx --yes tsx scripts/check-count.mts",
     "check:progress": "npx --yes tsx scripts/check-progress.mts",
     "check:persist": "npx --yes tsx scripts/check-persist.mts",

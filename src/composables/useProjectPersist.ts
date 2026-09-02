@@ -162,6 +162,17 @@ export function useProjectPersist() {
   )
 
   watch(() => project.name, markMeta)
+  watch(
+    () =>
+      [
+        project.grid.insetLeft,
+        project.grid.insetTop,
+        project.grid.insetRight,
+        project.grid.insetBottom,
+        project.grid.calibrated,
+      ] as const,
+    markMeta,
+  )
   watch(() => [viewport.scale, viewport.offsetX, viewport.offsetY], markMeta)
   watch(() => interaction.focus, markMeta, { deep: true })
   watch(() => progress.completed, markCells)

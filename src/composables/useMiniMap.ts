@@ -219,6 +219,10 @@ export function useMiniMap(canvasRef: Ref<HTMLCanvasElement | null>) {
       project.image?.bitmap,
       project.grid.rowCount,
       project.grid.colCount,
+      project.grid.insetLeft,
+      project.grid.insetTop,
+      project.grid.insetRight,
+      project.grid.insetBottom,
     ],
     () => {
       renderer?.requestFrame()
