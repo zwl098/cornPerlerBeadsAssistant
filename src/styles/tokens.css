@@ -1,0 +1,60 @@
+:root {
+  --brand: #e36b4c;
+  --brand-pressed: #c95538;
+  --brand-soft: #fff1eb;
+  --bg: #fff8f3;
+  --bg-workspace: #f3eee8;
+  --canvas-well: #d9d3c9;
+  --surface: #ffffff;
+  --surface-soft: #fffdfb;
+  --ink: #2b2420;
+  --ink-2: #6b625c;
+  --ink-3: #9a918a;
+  --line: #e8e0d8;
+  --ok: #2f9e6b;
+  --warn: #c9842a;
+  --danger: #d14b4b;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+img {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

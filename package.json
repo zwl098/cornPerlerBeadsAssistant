@@ -1,0 +1,30 @@
+{
+  "name": "perler-beads-assistant",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "check:coord": "npx --yes tsx scripts/check-coord.mts",
+    "check:count": "npx --yes tsx scripts/check-count.mts",
+    "check:progress": "npx --yes tsx scripts/check-progress.mts",
+    "check:persist": "npx --yes tsx scripts/check-persist.mts",
+    "check:minimap": "npx --yes tsx scripts/check-minimap.mts"
+  },
+  "dependencies": {
+    "@phosphor-icons/vue": "^2.2.1",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.42",
+    "vue-router": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "typescript": "^5.9.2",
+    "unocss": "^66.9.2",
+    "vite": "^8.2.2",
+    "vue-tsc": "^3.3.11"
+  }
+}
